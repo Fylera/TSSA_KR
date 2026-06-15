@@ -67,7 +67,7 @@ def detect_profession(vacancy_text):
 
 
 def extract_requirements(description):
-      """
+    """
     Извлекает требования из описания вакансии: навыки, опыт, формат работы, график.
 
     Параметры:
@@ -84,7 +84,9 @@ def extract_requirements(description):
     Пример:
         >>> extract_requirements("опыт от 3 лет, удаленно, гибкий график, python sql")
         {'skills': ['python', 'sql'], 'experience': 'от 3 лет', ...}
-    """
+     """
+
+
     requirements = {
         'skills': [],
         'experience': None,
