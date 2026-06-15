@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>QA Vacancy Dashboard — анализ рынка</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f4f6fa;
+            --bg-hero: linear-gradient(135deg, #0b2b44 0%, #1a4a6f 100%);
+            --text-hero: white;
+            --card-bg: #ffffff;
+            --card-border: #eef2f6;
+            --text-primary: #1e2a3a;
+            --text-secondary: #5b6e8c;
+            --badge-bg: #eef2ff;
+            --salary-bg: #f8fafc;
+            --input-bg: white;
+            --input-border: #e2e8f0;
+            --btn-filter-on: #1f6392;
+            --btn-filter-off: #5b6e8c;
+        }
+        body.dark {
+            --bg-body: #121826;
+            --bg-hero: linear-gradient(135deg, #0a1a2a 0%, #143c5c 100%);
+            --text-hero: #eef2ff;
+            --card-bg: #1e2433;
+            --card-border: #2a3346;
+            --text-primary: #e2e8f0;
+            --text-secondary: #9aa9c1;
+            --badge-bg: #2a3a5c;
+            --salary-bg: #1f2a3e;
+            --input-bg: #1a1f2e;
+            --input-border: #2f3a4e;
+            --btn-filter-on: #2c82b0;
+            --btn-filter-off: #6c7a91;
+        }
+        body {
+            background: var(--bg-body);
+            font-family: 'Inter', sans-serif;
+            transition: background 0.2s, color 0.2s;
+            color: var(--text-primary);
+        }
+        .hero-section {
+            background: var(--bg-hero);
+            border-radius: 0 0 2rem 2rem;
+            padding: 2rem 1rem 2.5rem 1rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+        }
+        .hero-title, .hero-sub, .stat-badge {
+            color: var(--text-hero);
+        }
+        .stat-badge {
+            background: rgba(255,255,255,0.15);
+            backdrop-filter: blur(4px);
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+        }
+        .search-card, .vacancy-card, .footer-graph {
+            background: var(--card-bg);
+            border-color: var(--card-border);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .glass-input {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-primary);
+        }
+        .glass-input:focus {
+            border-color: #1f6392;
+            box-shadow: 0 0 0 3px rgba(31,99,146,0.2);
+            background-color: var(--input-bg);
+        }
+        .employer, .text-secondary {
+            color: var(--text-secondary) !important;
+        }
+        .salary-exp {
+            background: var(--salary-bg);
+            color: #2c82b0;
+        }
+        .badge-category {
+            background: var(--badge-bg);
+            color: var(--text-primary);
+        }
+        .similarity-badge {
+            background: var(--badge-bg);
+            color: var(--text-primary);
+        }
+        .btn-primary-custom {
+            background: linear-gradient(95deg, #0b2b44 0%, #1f6392 100%);
+            border: none;
+            border-radius: 1rem;
+            padding: 0.6rem 1.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            color: white;
+        }
+        .btn-primary-custom:hover {
+            transform: scale(0.97);
+            background: linear-gradient(95deg, #0a253a 0%, #185276 100%);
+        }
+        .theme-toggle {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 2rem;
+            padding: 0.4rem 1rem;
+            color: white;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .filter-toggle-btn {
+            background: var(--btn-filter-off);
+            border: none;
+            border-radius: 2rem;
+            padding: 0.6rem 1rem;
+            font-weight: 600;
+            transition: 0.2s;
+            color: white;
+            width: 100%;
+        }
+        .filter-toggle-btn.active {
+            background: var(--btn-filter-on);
+            box-shadow: 0 0 0 2px rgba(31,99,146,0.5);
+        }
+        .filter-toggle-btn:hover {
+            filter: brightness(1.05);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+<div class="hero-section">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="hero-title"><i class="bi bi-briefcase-fill me-2"></i>QA Dashboard</h1>
+                <p class="hero-sub mt-2">Анализ вакансий · Релевантность · Вилка доходов</p>
+            </div>
+            <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                <div class="d-flex justify-content-md-end gap-2">
+                    <div class="stat-badge d-inline-block">
+                        <i class="bi bi-database"></i> Всего: {{ total_count }}
+                    </div>
+                    <button id="darkmode-toggle" class="theme-toggle">
+                        <i class="bi bi-moon-stars"></i> Тема
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="search-card p-4 mb-4">
+        <form method="post" id="searchForm">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold"><i class="bi bi-code-slash"></i> Ваши ключевые навыки</label>
+                    <input type="text" class="form-control glass-input" name="skills" id="skills"
+                           value="{{ user_skills }}" placeholder="Например: python pytest selenium postman playwright">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">&nbsp;</label>
+                    <button type="button" id="filterToggleBtn" class="filter-toggle-btn {% if not show_all %}active{% endif %}">
+                        {% if not show_all %}
+                        🔒 Фильтр 25% вкл
+                        {% else %}
+                        🔓 Фильтр 25% выкл
+                        {% endif %}
+                    </button>
+                    <input type="hidden" name="show_all" id="showAllInput" value="{{ 'on' if show_all else '' }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label fw-semibold">&nbsp;</label>
+                    <button type="submit" class="btn btn-primary-custom w-100">
+                        <i class="bi bi-stars"></i> Подобрать
+                    </button>
+                </div>
+            </div>
+        </form>
+        <div class="mt-3 text-start">
+            <div class="stat-badge d-inline-block bg-secondary bg-opacity-25">
+                <i class="bi bi-funnel"></i> Отображается вакансий: {{ filtered_count }}
+                {% if not show_all and user_skills %}
+                <span class="ms-1 small">(только с совпадением ≥25%)</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- список вакансий (без изменений) -->
+    <div class="row g-4">
+        {% for v in vacancies %}
+        <div class="col-12">
+            <div class="vacancy-card p-3 p-md-4">
+                <div class="row align-items-start">
+                    <div class="col-12 col-md-9">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
+                            <h5 class="mb-0 fw-semibold">
+                                <a href="{{ v.url }}" target="_blank" class="text-decoration-none" style="color: var(--text-primary);">
+                                    {{ v.name }}
+                                </a>
+                            </h5>
+                            {% if v.similarity > 0 %}
+                            <span class="similarity-badge">
+                                <i class="bi bi-graph-up"></i> совпадение {{ "%.0f"|format(v.similarity*100) }}%
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="employer mb-2">
+                            <i class="bi bi-building"></i> {{ v.employer }}
+                        </div>
+                        <div class="salary-exp d-inline-flex align-items-center gap-2 mt-1">
+                            <span><i class="bi bi-currency-exchange"></i> {{ v.salary_range }}</span>
+                            <span class="vr"></span>
+                            <span><i class="bi bi-briefcase"></i> {{ v.exp_display }}</span>
+                        </div>
+                        <p class="text-secondary mt-3 small mb-0">
+                            {{ v.description|striptags|truncate(220) }}
+                        </p>
+                    </div>
+                    <div class="col-12 col-md-3 mt-3 mt-md-0 text-md-end">
+                        <span class="badge-category"><i class="bi bi-tags"></i> {{ v.category_assigned }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12">
+            <div class="alert alert-light text-center p-5 rounded-4">
+                <i class="bi bi-inbox fs-1"></i>
+                <p class="mt-2 mb-0">Нет вакансий, соответствующих фильтру. Попробуйте другие навыки или отключите фильтр.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="footer-graph mt-5 p-3">
+        <div class="graph-title fw-semibold">
+            <i class="bi bi-bar-chart-steps"></i> Топ‑10 технологий в вакансиях
+        </div>
+        <div class="text-center px-2">
+            <img src="data:image/png;base64,{{ plot_url }}" class="img-fluid rounded-3" alt="График" style="max-height: 450px; width: auto;">
+        </div>
+    </div>
+
+    <div class="text-center mt-4 text-secondary small">
+        <i class="bi bi-database-check"></i> Данные собраны с hh.ru · кэширование работает
+    </div>
+</div>
+
+<script>
+    // тёмная тема
+    const toggleBtn = document.getElementById('darkmode-toggle');
+    if (localStorage.getItem('theme') === 'dark') {
+        document.body.classList.add('dark');
+    }
+    toggleBtn.addEventListener('click', () => {
+        document.body.classList.toggle('dark');
+        localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
+    });
+
+    // кнопка-фильтр
+    const filterBtn = document.getElementById('filterToggleBtn');
+    const showAllInput = document.getElementById('showAllInput');
+    const searchForm = document.getElementById('searchForm');
+
+    filterBtn.addEventListener('click', () => {
+        // переключаем состояние
+        const currentVal = showAllInput.value;
+        if (currentVal === 'on') {
+            showAllInput.value = '';
+            filterBtn.classList.add('active');
+            filterBtn.innerHTML = '🔒 Фильтр 25% вкл';
+        } else {
+            showAllInput.value = 'on';
+            filterBtn.classList.remove('active');
+            filterBtn.innerHTML = '🔓 Фильтр 25% выкл';
+        }
+        // автоматически отправляем форму, чтобы применить фильтр
+        searchForm.submit();
+    });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
