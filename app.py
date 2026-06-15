@@ -21,6 +21,7 @@ app = Flask(__name__)
 DB_FILE = 'vacancies.db'
 CACHE_FILE = 'vacancy_details_cache.json'
 
+# Ключевые слова для поиска технологий в вакансиях
 tech_keywords = [
     'python', 'java', 'javascript', 'typescript', 'c++', 'c#', 'go', 'rust',
     'sql', 'postgresql', 'mysql', 'mongodb', 'redis', 'kafka', 'docker',
@@ -29,6 +30,7 @@ tech_keywords = [
     'spring', 'node.js', 'fastapi', 'rest', 'api', 'golang', 'playwright'
 ]
 
+# Ключевые слова для определения профессии по тексту вакансии
 PROFESSION_KEYWORDS = {
     'QA': ['тестировщик', 'qa', 'quality assurance', 'тестирование', 'test engineer', 'manual', 'automation'],
     'Developer': ['разработчик', 'developer', 'программист', 'programmer', 'backend', 'frontend', 'fullstack'],
@@ -38,9 +40,15 @@ PROFESSION_KEYWORDS = {
     'Designer': ['дизайнер', 'designer', 'ui/ux', 'графический дизайнер']
 }
 
-# ========== ФУНКЦИИ ДЛЯ АНАЛИЗА ==========
+
+# ========== ФУНКЦИИ ДЛЯ АНАЛИЗА ВАКАНСИЙ ==========
 
 def detect_profession(vacancy_text):
+    """
+    Определяет профессию вакансии по ключевым словам в тексте.
+    Аргументы: vacancy_text (str) - текст вакансии
+    Возвращает: str - название профессии (QA, Developer, Analyst, DevOps, Manager, Designer, Other)
+    """
     text_lower = vacancy_text.lower()
     for prof, keywords in PROFESSION_KEYWORDS.items():
         for keyword in keywords:
@@ -50,6 +58,11 @@ def detect_profession(vacancy_text):
 
 
 def extract_requirements(description):
+    """
+    Извлекает требования из описания вакансии: навыки, опыт, формат работы, график.
+    Аргументы: description (str) - HTML-текст описания
+    Возвращает: dict с ключами skills, experience, education, work_format, schedule
+    """
     requirements = {
         'skills': [],
         'experience': None,
@@ -58,30 +71,44 @@ def extract_requirements(description):
         'schedule': None
     }
     text = description.lower() if description else ''
+
+    # Поиск навыков из tech_keywords
     found_skills = []
     for tech in tech_keywords:
         if tech in text:
             found_skills.append(tech)
     requirements['skills'] = found_skills[:5]
+
+    # Поиск опыта
     exp_match = re.search(r'опыт\s+от\s+(\d+)', text)
     if exp_match:
         requirements['experience'] = f"от {exp_match.group(1)} лет"
+
+    # Определение формата работы
     if 'удален' in text or 'remote' in text:
         requirements['work_format'] = 'Удаленно'
     elif 'гибрид' in text or 'hybrid' in text:
         requirements['work_format'] = 'Гибрид'
     elif 'офис' in text:
         requirements['work_format'] = 'Офис'
+
+    # Определение графика работы
     if 'гибкий' in text or 'flexible' in text:
         requirements['schedule'] = 'Гибкий'
     elif '5/2' in text:
         requirements['schedule'] = '5/2'
     elif '2/2' in text:
         requirements['schedule'] = '2/2'
+
     return requirements
 
 
 def get_vacancy_statistics(vacancies):
+    """
+    Вычисляет статистику по выборке вакансий.
+    Аргументы: vacancies (list) - список словарей с данными вакансий
+    Возвращает: dict с ключами total, companies, professions, avg_salary, top_skills, salary_distribution, top_companies
+    """
     stats = {
         'total': len(vacancies),
         'companies': {},
@@ -91,15 +118,19 @@ def get_vacancy_statistics(vacancies):
         'salary_distribution': {'low': 0, 'medium': 0, 'high': 0}
     }
     salaries = []
+
     for v in vacancies:
         employer = v.get('employer', 'Не указана')
         stats['companies'][employer] = stats['companies'].get(employer, 0) + 1
+
         text = v.get('vacancy_text', '')
         prof = detect_profession(text)
         stats['professions'][prof] = stats['professions'].get(prof, 0) + 1
+
         for tech in tech_keywords:
             if tech in text:
                 stats['top_skills'][tech] = stats['top_skills'].get(tech, 0) + 1
+
         salary_raw = v.get('salary_raw', '')
         salary_match = re.search(r'(\d+)[\s\-]*(\d+)?', salary_raw)
         if salary_match:
@@ -108,6 +139,7 @@ def get_vacancy_statistics(vacancies):
             else:
                 salary = int(salary_match.group(1))
             salaries.append(salary)
+
     if salaries:
         stats['avg_salary'] = int(sum(salaries) / len(salaries))
         for s in salaries:
@@ -117,12 +149,18 @@ def get_vacancy_statistics(vacancies):
                 stats['salary_distribution']['medium'] += 1
             else:
                 stats['salary_distribution']['high'] += 1
+
     stats['top_skills'] = dict(sorted(stats['top_skills'].items(), key=lambda x: x[1], reverse=True)[:5])
     stats['top_companies'] = dict(sorted(stats['companies'].items(), key=lambda x: x[1], reverse=True)[:5])
     return stats
 
 
 def get_typical_vacancy(vacancies, profession):
+    """
+    Находит типовую (наиболее среднюю) вакансию для указанной профессии.
+    Аргументы: vacancies (list), profession (str)
+    Возвращает: dict с данными вакансии или None
+    """
     prof_vacancies = [v for v in vacancies if detect_profession(v.get('vacancy_text', '')) == profession]
     if not prof_vacancies:
         return None
@@ -131,6 +169,11 @@ def get_typical_vacancy(vacancies, profession):
 
 
 def get_generalized_requirements(vacancies, profession):
+    """
+    Формирует обобщённые требования для всех вакансий указанной профессии.
+    Аргументы: vacancies (list), profession (str)
+    Возвращает: dict с ключами profession, count, top_skills, typical_experience, common_format
+    """
     prof_vacancies = [v for v in vacancies if detect_profession(v.get('vacancy_text', '')) == profession]
     if not prof_vacancies:
         return {}
@@ -155,8 +198,10 @@ def get_generalized_requirements(vacancies, profession):
 # ========== БАЗА ДАННЫХ ==========
 
 def init_db():
+    """Инициализирует SQLite базу данных и заполняет из JSON, если база пуста"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS vacancies (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -169,15 +214,20 @@ def init_db():
             similarity REAL DEFAULT 0
         )
     ''')
+
     cursor.execute("SELECT COUNT(*) FROM vacancies")
     count = cursor.fetchone()[0]
+
     if count > 0:
         print(f"✅ База уже заполнена: {count} вакансий")
         conn.close()
         return
+
     print("📦 Загружаю JSON в базу данных...")
+
     with open('filtered_vacancies.json', 'r', encoding='utf-8') as f:
         all_vacancies = json.load(f)
+
     for v in all_vacancies:
         parts = [
             v.get('name', ''),
@@ -188,17 +238,20 @@ def init_db():
         text = ' '.join(parts)
         text = re.sub(r'<[^>]+>', ' ', text)
         text = re.sub(r'\s+', ' ', text).strip().lower()
+
         cursor.execute('''
             INSERT INTO vacancies (name, description, category_assigned, employer, url, vacancy_text)
             VALUES (?, ?, ?, ?, ?, ?)
         ''', (v.get('name', ''), v.get('description', ''), v.get('category_assigned', ''),
               v.get('employer', ''), v.get('url', ''), text))
+
     conn.commit()
     print(f"✅ Загружено {len(all_vacancies)} вакансий в базу")
     conn.close()
 
 
 def get_all_vacancies():
+    """Возвращает список всех вакансий из БД"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('SELECT id, name, description, category_assigned, employer, url, vacancy_text FROM vacancies')
@@ -209,6 +262,7 @@ def get_all_vacancies():
 
 
 def update_similarity(vacancy_id, similarity):
+    """Обновляет коэффициент схожести вакансии в БД"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('UPDATE vacancies SET similarity = ? WHERE id = ?', (similarity, vacancy_id))
@@ -217,6 +271,7 @@ def update_similarity(vacancy_id, similarity):
 
 
 def get_sorted_vacancies(threshold=0.25):
+    """Возвращает вакансии, отсортированные по схожести (от большего к меньшему)"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('''
@@ -230,6 +285,7 @@ def get_sorted_vacancies(threshold=0.25):
 
 
 def get_tech_stats():
+    """Подсчитывает частоту упоминания технологий и возвращает топ-10"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('SELECT vacancy_text FROM vacancies')
@@ -247,6 +303,7 @@ def get_tech_stats():
 # ========== КЭШ И ПАРСИНГ ==========
 
 def load_cache():
+    """Загружает кэш зарплат и опыта из JSON-файла"""
     try:
         with open(CACHE_FILE, 'r', encoding='utf-8') as f:
             return json.load(f)
@@ -255,6 +312,7 @@ def load_cache():
 
 
 def save_cache(cache):
+    """Сохраняет кэш зарплат и опыта в JSON-файл"""
     with open(CACHE_FILE, 'w', encoding='utf-8') as f:
         json.dump(cache, f, ensure_ascii=False, indent=2)
 
@@ -263,6 +321,11 @@ cache = load_cache()
 
 
 def fetch_vacancy_details_playwright(url):
+    """
+    Парсит страницу вакансии на hh.ru для получения актуальной зарплаты и опыта.
+    Аргументы: url (str) - ссылка на вакансию
+    Возвращает: tuple (salary_text, experience_text)
+    """
     if url in cache:
         return cache[url]['salary'], cache[url]['experience']
     try:
@@ -290,6 +353,7 @@ def fetch_vacancy_details_playwright(url):
 
 
 def parse_salary_range(salary_str: str) -> str:
+    """Преобразует сырую строку зарплаты в читаемый формат с валютой"""
     if not salary_str or salary_str == "не указана" or "ошибка" in salary_str.lower():
         return salary_str
     currency = "₽"
@@ -318,6 +382,7 @@ def parse_salary_range(salary_str: str) -> str:
 
 
 def extract_experience_from_desc(text):
+    """Извлекает требуемый опыт работы из текста описания вакансии"""
     pat = r'опыт(?: работы)?\s+от\s+(\d+(?:\.\d+)?)\s*лет'
     match = re.search(pat, text, re.IGNORECASE)
     if match:
@@ -325,10 +390,11 @@ def extract_experience_from_desc(text):
     return "не указан"
 
 
-# ========== API МАРШРУТЫ ==========
+# ========== API МАРШРУТЫ ДЛЯ ДАШБОРДА ==========
 
 @app.route('/api/statistics')
 def api_statistics():
+    """API: возвращает общую статистику по выборке вакансий (количество, средняя ЗП, топ-компании, топ-навыки)"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('SELECT id, name, description, employer, vacancy_text FROM vacancies')
@@ -341,11 +407,13 @@ def api_statistics():
 
 @app.route('/api/professions')
 def api_professions():
+    """API: возвращает список доступных профессий для фильтрации"""
     return jsonify(list(PROFESSION_KEYWORDS.keys()))
 
 
 @app.route('/api/typical/<profession>')
 def api_typical(profession):
+    """API: возвращает типовую вакансию для указанной профессии"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('SELECT id, name, description, employer, vacancy_text FROM vacancies')
@@ -360,6 +428,7 @@ def api_typical(profession):
 
 @app.route('/api/generalized/<profession>')
 def api_generalized(profession):
+    """API: возвращает обобщённые требования для указанной профессии (топ навыки, опыт, формат)"""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute('SELECT id, name, description, employer, vacancy_text FROM vacancies')
@@ -373,18 +442,29 @@ def api_generalized(profession):
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    """
+    Главная страница. Обрабатывает поиск вакансий по навыкам пользователя.
+    GET: отображает все вакансии
+    POST: фильтрует вакансии по навыкам и порогу схожести (25%)
+    """
     global all_vacancies, model, vacancy_embeddings
+
     user_skills = ""
     show_all = False
+
     if request.method == 'POST':
         user_skills = request.form.get('skills', '')
         show_all = request.form.get('show_all') == 'on'
+
         if user_skills.strip():
             user_emb = model.encode([user_skills])
             similarities = cosine_similarity(user_emb, vacancy_embeddings)[0]
+
             for i, v in enumerate(all_vacancies):
                 update_similarity(v['id'], float(similarities[i]))
-            candidate_vacancies = get_sorted_vacancies(0 if show_all else 0.25)
+
+            threshold = 0 if show_all else 0.25
+            candidate_vacancies = get_sorted_vacancies(threshold)
         else:
             candidate_vacancies = get_all_vacancies()
             for v in candidate_vacancies:
@@ -393,6 +473,7 @@ def index():
         candidate_vacancies = get_all_vacancies()
         for v in candidate_vacancies:
             v['similarity'] = 0
+
     valid_vacancies = []
     for v in candidate_vacancies:
         url = v.get('url')
@@ -403,14 +484,19 @@ def index():
         else:
             v['salary_raw'] = "не указана"
             v['exp_display'] = extract_experience_from_desc(v.get('description', ''))
+
         error_phrases = ['ошибка парсинга', 'не удалось загрузить', '403', '404']
         if any(phrase in v['salary_raw'].lower() for phrase in error_phrases):
             continue
         if any(phrase in v['exp_display'].lower() for phrase in error_phrases):
             continue
+
         v['salary_range'] = parse_salary_range(v['salary_raw'])
         valid_vacancies.append(v)
+
     save_cache(cache)
+
+    # Генерация графика топ-10 технологий
     sorted_tech = get_tech_stats()
     fig, ax = plt.subplots(figsize=(8, 5))
     techs, counts = zip(*sorted_tech)
@@ -424,6 +510,7 @@ def index():
     buf.seek(0)
     plot_url = base64.b64encode(buf.getvalue()).decode('utf8')
     plt.close(fig)
+
     return render_template('index.html', vacancies=valid_vacancies, plot_url=plot_url,
                           user_skills=user_skills, show_all=show_all,
                           total_count=len(all_vacancies), filtered_count=len(valid_vacancies))
@@ -435,6 +522,7 @@ _initialized = False
 
 
 def initialize_app():
+    """Инициализирует приложение: БД, загрузка модели, эмбеддинги вакансий. Выполняется один раз при старте."""
     global _initialized, all_vacancies, vacancy_texts, model, vacancy_embeddings
     if _initialized:
         return
