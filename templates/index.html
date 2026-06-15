@@ -22,6 +22,7 @@
             --input-border: #e2e8f0;
             --btn-filter-on: #1f6392;
             --btn-filter-off: #5b6e8c;
+            --dashboard-bg: #f8fafc;
         }
         body.dark {
             --bg-body: #121826;
@@ -37,6 +38,7 @@
             --input-border: #2f3a4e;
             --btn-filter-on: #2c82b0;
             --btn-filter-off: #6c7a91;
+            --dashboard-bg: #1a1f2e;
         }
         body {
             background: var(--bg-body);
@@ -60,10 +62,15 @@
             border-radius: 2rem;
             padding: 0.5rem 1rem;
         }
-        .search-card, .vacancy-card, .footer-graph {
+        .search-card, .vacancy-card, .footer-graph, .dashboard-card {
             background: var(--card-bg);
             border-color: var(--card-border);
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-radius: 1rem;
+            padding: 1.5rem;
+        }
+        .dashboard-card {
+            height: 100%;
         }
         .glass-input {
             background-color: var(--input-bg);
@@ -133,6 +140,38 @@
             filter: brightness(1.05);
             transform: translateY(-1px);
         }
+        .profession-select {
+            background-color: var(--input-bg);
+            border: 1px solid var(--input-border);
+            color: var(--text-primary);
+            border-radius: 0.75rem;
+            padding: 0.5rem 1rem;
+            width: 100%;
+        }
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 0.75rem;
+            background: var(--dashboard-bg);
+            border-radius: 1rem;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f6392;
+        }
+        .stat-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+        hr {
+            border-color: var(--card-border);
+        }
     </style>
 </head>
 <body>
@@ -158,6 +197,7 @@
 </div>
 
 <div class="container mb-5">
+    <!-- Поиск -->
     <div class="search-card p-4 mb-4">
         <form method="post" id="searchForm">
             <div class="row g-3 align-items-end">
@@ -195,9 +235,75 @@
         </div>
     </div>
 
-    <!-- список вакансий (без изменений) -->
+    <!-- ========== ДАШБОРД (4 блока по ТЗ) ========== -->
+    <div class="row g-4 mb-5">
+        <!-- Блок 1: Общие сведения о выборке -->
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-pie-chart"></i> Общие сведения</h6>
+                <div id="stats-container">
+                    <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div> Загрузка...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Блок 2: Типовая вакансия по профессии -->
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-file-text"></i> Типовая вакансия</h6>
+                <select id="typical-select" class="profession-select mb-3">
+                    <option value="QA">QA / Тестировщик</option>
+                    <option value="Developer">Developer</option>
+                    <option value="Analyst">Analyst</option>
+                    <option value="DevOps">DevOps</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Designer">Designer</option>
+                </select>
+                <div id="typical-container">
+                    <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Блок 3: Классы вакансий (обобщённая вакансия) -->
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-diagram-3"></i> Обобщённые требования</h6>
+                <select id="generalized-select" class="profession-select mb-3">
+                    <option value="QA">QA / Тестировщик</option>
+                    <option value="Developer">Developer</option>
+                    <option value="Analyst">Analyst</option>
+                    <option value="DevOps">DevOps</option>
+                    <option value="Manager">Manager</option>
+                    <option value="Designer">Designer</option>
+                </select>
+                <div id="generalized-container">
+                    <div class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Блок 4: Поиск подходящих вакансий — уже есть ниже, дублируем как ссылку -->
+        <div class="col-md-6 col-lg-3">
+            <div class="dashboard-card">
+                <h6 class="fw-semibold mb-3"><i class="bi bi-search-heart"></i> Поиск по навыкам</h6>
+                <p class="small text-secondary">Используйте форму выше, чтобы найти 5 наиболее похожих вакансий с расчётом метрики схожести.</p>
+                <hr>
+                <div class="small text-primary-emphasis">
+                    <i class="bi bi-info-circle"></i> Метрика: <strong>cosine similarity</strong> между эмбеддингами навыков и текстом вакансии
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Список вакансий (5 наиболее похожих) -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <i class="bi bi-star-fill text-warning"></i>
+        <h5 class="mb-0 fw-semibold">Топ-5 рекомендуемых вакансий</h5>
+        <span class="badge bg-secondary">по косинусной близости</span>
+    </div>
     <div class="row g-4">
-        {% for v in vacancies %}
+        {% for v in vacancies[:5] %}
         <div class="col-12">
             <div class="vacancy-card p-3 p-md-4">
                 <div class="row align-items-start">
@@ -210,7 +316,7 @@
                             </h5>
                             {% if v.similarity > 0 %}
                             <span class="similarity-badge">
-                                <i class="bi bi-graph-up"></i> совпадение {{ "%.0f"|format(v.similarity*100) }}%
+                                <i class="bi bi-graph-up"></i> схожесть {{ "%.1f"|format(v.similarity*100) }}%
                             </span>
                             {% endif %}
                         </div>
@@ -242,6 +348,7 @@
         {% endfor %}
     </div>
 
+    <!-- График технологий -->
     <div class="footer-graph mt-5 p-3">
         <div class="graph-title fw-semibold">
             <i class="bi bi-bar-chart-steps"></i> Топ‑10 технологий в вакансиях
@@ -257,7 +364,7 @@
 </div>
 
 <script>
-    // тёмная тема
+    // Тёмная тема
     const toggleBtn = document.getElementById('darkmode-toggle');
     if (localStorage.getItem('theme') === 'dark') {
         document.body.classList.add('dark');
@@ -267,13 +374,11 @@
         localStorage.setItem('theme', document.body.classList.contains('dark') ? 'dark' : 'light');
     });
 
-    // кнопка-фильтр
+    // Фильтр
     const filterBtn = document.getElementById('filterToggleBtn');
     const showAllInput = document.getElementById('showAllInput');
     const searchForm = document.getElementById('searchForm');
-
     filterBtn.addEventListener('click', () => {
-        // переключаем состояние
         const currentVal = showAllInput.value;
         if (currentVal === 'on') {
             showAllInput.value = '';
@@ -284,9 +389,76 @@
             filterBtn.classList.remove('active');
             filterBtn.innerHTML = '🔓 Фильтр 25% выкл';
         }
-        // автоматически отправляем форму, чтобы применить фильтр
         searchForm.submit();
     });
+
+    // Загрузка статистики
+    async function loadStatistics() {
+        try {
+            const resp = await fetch('/api/statistics');
+            const data = await resp.json();
+            document.getElementById('stats-container').innerHTML = `
+                <div class="dashboard-stats">
+                    <div class="stat-item"><div class="stat-value">${data.total}</div><div class="stat-label">вакансий</div></div>
+                    <div class="stat-item"><div class="stat-value">${data.avg_salary?.toLocaleString() || 0}₽</div><div class="stat-label">средняя ЗП</div></div>
+                    <div class="stat-item"><div class="stat-value">${Object.keys(data.top_companies || {}).length}</div><div class="stat-label">компаний</div></div>
+                    <div class="stat-item"><div class="stat-value">${Object.keys(data.professions || {}).length}</div><div class="stat-label">профессий</div></div>
+                </div>
+                <div class="mt-2 small text-secondary">
+                    <i class="bi bi-bar-chart"></i> Топ навык: ${Object.keys(data.top_skills || {})[0] || '—'}
+                </div>
+            `;
+        } catch(e) {
+            document.getElementById('stats-container').innerHTML = '<div class="text-center text-danger small">Ошибка загрузки</div>';
+        }
+    }
+
+    // Типовая вакансия
+    async function loadTypical(profession) {
+        document.getElementById('typical-container').innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>';
+        try {
+            const resp = await fetch(`/api/typical/${profession}`);
+            const data = await resp.json();
+            if (data.error) throw new Error(data.error);
+            document.getElementById('typical-container').innerHTML = `
+                <div class="small">
+                    <div class="fw-semibold mb-1">${data.name || '—'}</div>
+                    <div class="employer small">${data.employer || '—'}</div>
+                    <p class="small text-secondary mt-2 mb-0">${(data.description || '').replace(/<[^>]*>/g, '').substring(0, 120)}...</p>
+                </div>
+            `;
+        } catch(e) {
+            document.getElementById('typical-container').innerHTML = '<div class="text-center text-danger small">Нет вакансий</div>';
+        }
+    }
+
+    // Обобщённые требования
+    async function loadGeneralized(profession) {
+        document.getElementById('generalized-container').innerHTML = '<div class="text-center py-3"><div class="spinner-border spinner-border-sm text-secondary"></div></div>';
+        try {
+            const resp = await fetch(`/api/generalized/${profession}`);
+            const data = await resp.json();
+            document.getElementById('generalized-container').innerHTML = `
+                <div class="small">
+                    <div class="mb-2"><i class="bi bi-briefcase"></i> <strong>${data.count || 0}</strong> вакансий</div>
+                    <div class="mb-2"><i class="bi bi-tools"></i> ${data.top_skills?.slice(0,3).join(', ') || '—'}</div>
+                    <div class="mb-2"><i class="bi bi-clock"></i> Опыт: ${data.typical_experience || '—'}</div>
+                    <div><i class="bi bi-building"></i> Формат: ${data.common_format || '—'}</div>
+                </div>
+            `;
+        } catch(e) {
+            document.getElementById('generalized-container').innerHTML = '<div class="text-center text-danger small">Ошибка</div>';
+        }
+    }
+
+    // Обработчики выбора
+    document.getElementById('typical-select').addEventListener('change', (e) => loadTypical(e.target.value));
+    document.getElementById('generalized-select').addEventListener('change', (e) => loadGeneralized(e.target.value));
+
+    // Загрузка данных при старте
+    loadStatistics();
+    loadTypical('QA');
+    loadGeneralized('QA');
 </script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
